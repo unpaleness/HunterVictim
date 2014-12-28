@@ -50,6 +50,8 @@ private:
   short **_r; // reactions: 0 - no reaction in this cell, n - total summa
   long long int *_sums; // summas of speeds of each reaction type
   long long int _sum; // total summa of speeds
+  int _victims;
+  int _hunters;
   GLdouble _color[3][3];
 
   int _getNeighbourIndex(int, int);

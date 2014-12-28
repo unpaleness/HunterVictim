@@ -27,7 +27,7 @@ Field::Field(QGLWidget *parent) : QGLWidget(parent), _ui(new Ui::Field)
 
   _timer = new QTimer(this);
   connect(_timer, SIGNAL(timeout()), this, SLOT(oneIteration()));
-  _timer->start(0.001);
+  _timer->start(0.01);
   _timer2 = new QTimer(this);
   connect(_timer2, SIGNAL(timeout()), this, SLOT(updateField()));
   _timer2->start(20);
@@ -194,19 +194,25 @@ void Field::_initialize()
   for(int i = 0; i < 5; i++)
     _sums[i] = 0;
   _sum = 0;
-  for(int j = 0; j < _height; j++)
-    for(int i = 0; i < _width; i++)
-      _setReactions(j * _width + i);
+  for(int k = 0; k < _height * _width; k++)
+    _setReactions(k);
   for(int i = 0; i < 5; i++)
     _sum += _sums[i];
 }
 
 void Field::_oneIteration()
 {
+
+  if(_sum == 0)
+    return;
   // drop a random value
-  long long int ksi = rand() % _sum;
+  int randoms = _sum / 32767;
+  long long int ksi = 0;
+  for(int i = 0; i < randoms; i++)
+    ksi += rand() % 32767;
+  ksi += rand() % ((_sum % 32767) + 1);
   // locate reaction
-  long long int temp = 0;
+  long long int temp = -1;
   int reactionType;
   int cellIndex;
   for(reactionType = 0; reactionType < 5; reactionType++)
@@ -215,6 +221,8 @@ void Field::_oneIteration()
       break;
     temp += _sums[reactionType];
   }
+  if(reactionType == 5)
+    reactionType--;
   for(cellIndex = 0; cellIndex < _height * _width; cellIndex++)
   {
     if(temp + _r[reactionType][cellIndex] >= ksi)
@@ -235,18 +243,24 @@ void Field::_oneIteration()
   {
     case 0:
       _f[cellIndex] = 1;
+      _victims++;
       break;
     case 1:
       _f[cellIndex] = 0;
+      _victims--;
       break;
     case 2:
       _f[cellIndex] = 0;
+      _victims--;
       break;
     case 3:
       _f[cellIndex] = 2;
+      _victims--;
+      _hunters++;
       break;
     case 4:
       _f[cellIndex] = 0;
+      _hunters--;
       break;
   }
   // set new reactions
@@ -260,9 +274,19 @@ void Field::_oneIteration()
 
 void Field::_randomize()
 {
+  _victims = 0;
+  _hunters = 0;
+  int temp;
   for(int j = 0; j < _height; j++)
     for(int i = 0; i < _width; i++)
-      _f[j * _width + i] = rand() % 3;
+    {
+      temp = rand() % 3;
+      _f[j * _width + i] = temp;
+      if(temp == 1)
+        _victims++;
+      if(temp == 2)
+        _hunters++;
+    }
 }
 
 //void Field::_paintCell(GLshort y, GLshort x)
